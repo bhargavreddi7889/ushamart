@@ -3,29 +3,10 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { loginSchema } from "@/lib/validations/auth";
-import type { Role } from "@prisma/client";
-
-declare module "next-auth" {
-  interface User {
-    role: Role;
-    phone?: string | null;
-  }
-  interface Session {
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      role: Role;
-      phone?: string | null;
-    };
-  }
-}
+import { authConfig } from "@/auth.config";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: {
-    signIn: "/login",
-  },
+  ...authConfig,
   providers: [
     Credentials({
       name: "credentials",
@@ -56,22 +37,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id!;
-        token.role = user.role;
-        token.phone = user.phone;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as Role;
-        session.user.phone = token.phone as string | null | undefined;
-      }
-      return session;
-    },
-  },
 });
